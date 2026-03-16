@@ -99,11 +99,30 @@ local function display_question(q_data)
     local y_start = y_center + 20
     local spacing = 45
 
-    -- ดึงข้อมูลตัวเลือก ถ้าเซิร์ฟเวอร์ไม่ได้ส่งข้อไหนมา ให้ใช้ค่าเริ่มต้นแทน (บังคับให้มี 4 ข้อเสมอ)
-    local c1 = q_data.c1 or "ไม่มีข้อมูลตัวเลือก 1"
-    local c2 = q_data.c2 or "ไม่มีข้อมูลตัวเลือก 2"
-    local c3 = q_data.c3 or "ไม่มีข้อมูลตัวเลือก 3"
-    local c4 = q_data.c4 or "ไม่มีข้อถูก" 
+    -- === DEBUG: ตรวจสอบข้อมูลตัวเลือกที่ได้รับจาก server ===
+    print("[DEBUG] ข้อมูล choices ที่ได้รับสำหรับคำถาม: " .. tostring(q_data.qf))
+    print("[DEBUG] c1 = " .. tostring(q_data.c1))
+    print("[DEBUG] c2 = " .. tostring(q_data.c2))
+    print("[DEBUG] c3 = " .. tostring(q_data.c3))
+    print("[DEBUG] c4 = " .. tostring(q_data.c4))
+    print("[DEBUG] qc (เฉลย) = " .. tostring(q_data.qc))
+
+    -- ดึงข้อมูลตัวเลือก: ใช้ฟังก์ชัน helper เพื่อรองรับทั้ง nil และ empty string"
+    local function safe_choice(val, label)
+        if val == nil then
+            print("[WARNING] " .. label .. " = nil (server ไม่ได้ส่งมา!)")
+            return "[" .. label .. " หาย]"
+        elseif val == "" then
+            print("[WARNING] " .. label .. " = empty string (server ส่งค่าว่างมา!)")
+            return "[" .. label .. " ว่างเปล่า]"
+        end
+        return val
+    end
+
+    local c1 = safe_choice(q_data.c1, "c1")
+    local c2 = safe_choice(q_data.c2, "c2")
+    local c3 = safe_choice(q_data.c3, "c3")
+    local c4 = safe_choice(q_data.c4, "c4")
 
     -- ใส่ตัวเลือกทั้ง 4 ข้อลงในตาราง และบังคับวนลูป 4 รอบเสมอ
     local options = { c1, c2, c3, c4 }
@@ -116,7 +135,12 @@ local function display_question(q_data)
             fontSize = 20, 
             align = "center"
         })
-        opt:setFillColor(0.2, 0.6, 1)
+        -- ไฮไลต์สีแดงถ้าตัวเลือกหายหรือว่างเปล่า
+        if string.find(options[i], "^%[") then
+            opt:setFillColor(1, 0.3, 0.3)  -- สีแดง = data หาย
+        else
+            opt:setFillColor(0.2, 0.6, 1)  -- สีน้ำเงิน = ปกติ
+        end
         opt.answer = options[i]
         opt:addEventListener("tap", on_answer_tap)
         current_question_group:insert(opt)
