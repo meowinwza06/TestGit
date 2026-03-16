@@ -25,7 +25,7 @@ local y_center = display.contentCenterY
 
 -- โหลดเสียงเตรียมไว้ (แนะนำให้ใช้ไฟล์ .mp3 หรือ .wav)
 local sound_correct = audio.loadSound("1.mp3")
-local sound_wrong = audio.loadSound("2.mp3")
+local sound_wrong = audio.loadSound("5.mp3")
 
 local function update_score_display()
     if score_text then
