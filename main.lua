@@ -1,10 +1,10 @@
 local socket = require("socket")
 local json = require("json")
 
-local server_ip = "10.252.21.77"
-local server_port = 9999
+local server_ip = "10.254.51.170"
+local server_port = 8000
 local client_port = 8888
-local image_base_url = "http://202.29.50.41/s9999999999/flag/res/"
+local image_base_url = "https://raw.githubusercontent.com/pepezaza777-cyber/flag/refs/heads/main/"
 
 local udp = socket.udp()
 udp:settimeout(0)
@@ -22,6 +22,10 @@ local client_ip_text = nil
 
 local x_center = display.contentCenterX
 local y_center = display.contentCenterY
+
+-- โหลดเสียงเตรียมไว้ (แนะนำให้ใช้ไฟล์ .mp3 หรือ .wav)
+local sound_correct = audio.loadSound("1.mp3")
+local sound_wrong = audio.loadSound("2.mp3")
 
 local function update_score_display()
     if score_text then
@@ -44,13 +48,17 @@ end
 local function on_answer_tap(event)
     local chosen = event.target.answer
     if not current_question_data then return true end
+    
     if chosen == current_question_data.qc then
         right_score = right_score + 1
         print("Correct!")
+        audio.play(sound_correct) -- เล่นเสียงเมื่อตอบถูก
     else
         wrong_score = wrong_score + 1
         print("Wrong!")
+        audio.play(sound_wrong) -- เล่นเสียงเมื่อตอบผิด
     end
+    
     update_score_display()
     clear_current_question()
     return true
@@ -91,7 +99,8 @@ local function display_question(q_data)
     local y_start = y_center + 20
     local spacing = 45
 
-    local options = { q_data.c1, q_data.c2, q_data.c3 }
+    -- เพิ่มตัวเลือกที่ 4 (q_data.c4) เข้าไปในตาราง
+    local options = { q_data.c1, q_data.c2, q_data.c3, q_data.c4 }
     for i = 1, #options do
         if options[i] then
             local opt = display.newText({
