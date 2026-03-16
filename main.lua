@@ -3,7 +3,7 @@ local json = require("json")
 
 local server_ip = "10.254.51.170"
 local server_port = 8000
-local client_port = 8888
+local client_port = 8000
 local image_base_url = "https://raw.githubusercontent.com/pepezaza777-cyber/flag/refs/heads/main/"
 
 local udp = socket.udp()
@@ -25,43 +25,7 @@ local y_center = display.contentCenterY
 
 -- โหลดเสียงเตรียมไว้จากโฟลเดอร์ sound
 local sound_correct = audio.loadSound("soud/1.mp3")
-local sound_wrong   = audio.loadSound("soud/5.mp3")
-
--- === เพลงพื้นหลัง ===
-local bgm_channel = nil
-local bgm_stream  = audio.loadStream("soud/บทสวดอัญเชฺิญปีศาจเขมร.mp3")
-
-local function play_bgm()
-    if bgm_stream then
-        bgm_channel = audio.play(bgm_stream, {
-            loops = 0,          -- เล่น 1 รอบ (จัดการ loop เองเพื่อ restart ได้)
-            onComplete = function()
-                print("[BGM] เพลงจบแล้ว -> เริ่มใหม่")
-                play_bgm()      -- เรียกตัวเองเพื่อเล่นซ้ำ
-            end
-        })
-        print("[BGM] เล่นเพลงพื้นหลัง (channel: " .. tostring(bgm_channel) .. ")")
-    else
-        print("[BGM] ERROR: โหลดไฟล์เพลงไม่ได้ ตรวจสอบชื่อไฟล์และโฟลเดอร์ soud/")
-    end
-end
-
--- เริ่มเพลงใหม่เมื่อแอปกลับมาจาก background (รี / minimize)
-local function on_system_event(event)
-    if event.type == "applicationResume" then
-        print("[BGM] App resume -> เริ่มเพลงใหม่")
-        if bgm_channel then
-            audio.stop(bgm_channel)
-        end
-        play_bgm()
-    elseif event.type == "applicationSuspend" then
-        print("[BGM] App suspend -> หยุดเพลง")
-        if bgm_channel then
-            audio.stop(bgm_channel)
-        end
-    end
-end
-Runtime:addEventListener("system", on_system_event)
+local sound_wrong = audio.loadSound("soud/5.mp3")
 
 local function update_score_display()
     if score_text then
@@ -121,13 +85,18 @@ local function display_question(q_data)
             return
         end
         local flag_image = event.target
+        
+        -- ป้องกันบั๊ก: ถ้าผู้ใช้กดตอบก่อนรูปโหลดเสร็จ ให้ลบรูปที่เพิ่งโหลดมาทิ้งไปเลย
+        if not current_question_group then
+            flag_image:removeSelf()
+            return
+        end
+        
         flag_image.x = x_center
         flag_image.y = y_center - 100
         flag_image.width = 200
         flag_image.height = 120
-        if current_question_group then
-            current_question_group:insert(flag_image)
-        end
+        current_question_group:insert(flag_image)
     end
 
     display.loadRemoteImage(flag_url, "GET", image_listener, "flagImage.png", system.TemporaryDirectory)
@@ -135,21 +104,11 @@ local function display_question(q_data)
     local y_start = y_center + 20
     local spacing = 45
 
-    -- === DEBUG: ตรวจสอบข้อมูลตัวเลือกที่ได้รับจาก server ===
-    print("[DEBUG] ข้อมูล choices ที่ได้รับสำหรับคำถาม: " .. tostring(q_data.qf))
-    print("[DEBUG] c1 = " .. tostring(q_data.c1))
-    print("[DEBUG] c2 = " .. tostring(q_data.c2))
-    print("[DEBUG] c3 = " .. tostring(q_data.c3))
-    print("[DEBUG] c4 = " .. tostring(q_data.c4))
-    print("[DEBUG] qc (เฉลย) = " .. tostring(q_data.qc))
-
     -- ดึงข้อมูลตัวเลือก: ใช้ฟังก์ชัน helper เพื่อรองรับทั้ง nil และ empty string"
     local function safe_choice(val, label)
         if val == nil then
-            print("[WARNING] " .. label .. " = nil (server ไม่ได้ส่งมา!)")
             return "[" .. label .. " หาย]"
         elseif val == "" then
-            print("[WARNING] " .. label .. " = empty string (server ส่งค่าว่างมา!)")
             return "[" .. label .. " ว่างเปล่า]"
         end
         return val
@@ -159,7 +118,7 @@ local function display_question(q_data)
     local c2 = safe_choice(q_data.c2, "c2")
     local c3 = safe_choice(q_data.c3, "c3")
     local c4 = safe_choice(q_data.c4, "c4")
-
+    
     -- ใส่ตัวเลือกทั้ง 4 ข้อลงในตาราง และบังคับวนลูป 4 รอบเสมอ
     local options = { c1, c2, c3, c4 }
     
@@ -204,7 +163,6 @@ local function poll_udp()
             if msg.type == "registered_ok" then
                 print("Server: Registration confirmed!")
             elseif msg.qf then
-                print("New Question Received: " .. msg.qf)
                 display_question(msg)
             end
         else
@@ -227,5 +185,4 @@ end
 display.setDefault("background", 0.25, 0.25, 0.25)
 register_with_server()
 update_score_display()
-play_bgm()   -- เริ่มเพลงพื้นหลังตั้งแต่เปิดแอป
 timer.performWithDelay(100, poll_udp, 0)
