@@ -1,7 +1,7 @@
 local socket = require("socket")
 
 local server_ip = "10.254.51.170" 
-local server_port = 6666
+local server_port = 9546
 local client_port = 5555
 
 local udp = socket.udp()
