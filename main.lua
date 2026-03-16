@@ -23,9 +23,9 @@ local client_ip_text = nil
 local x_center = display.contentCenterX
 local y_center = display.contentCenterY
 
--- โหลดเสียงเตรียมไว้ (แนะนำให้ใช้ไฟล์ .mp3 หรือ .wav)
-local sound_correct = audio.loadSound("1.mp3")
-local sound_wrong = audio.loadSound("5.mp3")
+-- โหลดเสียงเตรียมไว้จากโฟลเดอร์ sound
+local sound_correct = audio.loadSound("soud/1.mp3")
+local sound_wrong = audio.loadSound("soud/5.mp3")
 
 local function update_score_display()
     if score_text then
@@ -99,22 +99,27 @@ local function display_question(q_data)
     local y_start = y_center + 20
     local spacing = 45
 
-    -- เพิ่มตัวเลือกที่ 4 (q_data.c4) เข้าไปในตาราง
-    local options = { q_data.c1, q_data.c2, q_data.c3, q_data.c4 }
-    for i = 1, #options do
-        if options[i] then
-            local opt = display.newText({
-                text = options[i], 
-                x = x_center, 
-                y = y_start + (spacing * (i-1)), 
-                fontSize = 20, 
-                align = "center"
-            })
-            opt:setFillColor(0.2, 0.6, 1)
-            opt.answer = options[i]
-            opt:addEventListener("tap", on_answer_tap)
-            current_question_group:insert(opt)
-        end
+    -- ดึงข้อมูลตัวเลือก ถ้าเซิร์ฟเวอร์ไม่ได้ส่งข้อไหนมา ให้ใช้ค่าเริ่มต้นแทน (บังคับให้มี 4 ข้อเสมอ)
+    local c1 = q_data.c1 or "ไม่มีข้อมูลตัวเลือก 1"
+    local c2 = q_data.c2 or "ไม่มีข้อมูลตัวเลือก 2"
+    local c3 = q_data.c3 or "ไม่มีข้อมูลตัวเลือก 3"
+    local c4 = q_data.c4 or "ไม่มีข้อถูก" 
+
+    -- ใส่ตัวเลือกทั้ง 4 ข้อลงในตาราง และบังคับวนลูป 4 รอบเสมอ
+    local options = { c1, c2, c3, c4 }
+    
+    for i = 1, 4 do
+        local opt = display.newText({
+            text = options[i], 
+            x = x_center, 
+            y = y_start + (spacing * (i-1)), 
+            fontSize = 20, 
+            align = "center"
+        })
+        opt:setFillColor(0.2, 0.6, 1)
+        opt.answer = options[i]
+        opt:addEventListener("tap", on_answer_tap)
+        current_question_group:insert(opt)
     end
     
     if client_ip_text then
