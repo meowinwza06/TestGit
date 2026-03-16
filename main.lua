@@ -25,7 +25,43 @@ local y_center = display.contentCenterY
 
 -- โหลดเสียงเตรียมไว้จากโฟลเดอร์ sound
 local sound_correct = audio.loadSound("soud/1.mp3")
-local sound_wrong = audio.loadSound("soud/5.mp3")
+local sound_wrong   = audio.loadSound("soud/5.mp3")
+
+-- === เพลงพื้นหลัง ===
+local bgm_channel = nil
+local bgm_stream  = audio.loadStream("soud/บทสวดอัญเชฺิญปีศาจเขมร.mp3")
+
+local function play_bgm()
+    if bgm_stream then
+        bgm_channel = audio.play(bgm_stream, {
+            loops = 0,          -- เล่น 1 รอบ (จัดการ loop เองเพื่อ restart ได้)
+            onComplete = function()
+                print("[BGM] เพลงจบแล้ว -> เริ่มใหม่")
+                play_bgm()      -- เรียกตัวเองเพื่อเล่นซ้ำ
+            end
+        })
+        print("[BGM] เล่นเพลงพื้นหลัง (channel: " .. tostring(bgm_channel) .. ")")
+    else
+        print("[BGM] ERROR: โหลดไฟล์เพลงไม่ได้ ตรวจสอบชื่อไฟล์และโฟลเดอร์ soud/")
+    end
+end
+
+-- เริ่มเพลงใหม่เมื่อแอปกลับมาจาก background (รี / minimize)
+local function on_system_event(event)
+    if event.type == "applicationResume" then
+        print("[BGM] App resume -> เริ่มเพลงใหม่")
+        if bgm_channel then
+            audio.stop(bgm_channel)
+        end
+        play_bgm()
+    elseif event.type == "applicationSuspend" then
+        print("[BGM] App suspend -> หยุดเพลง")
+        if bgm_channel then
+            audio.stop(bgm_channel)
+        end
+    end
+end
+Runtime:addEventListener("system", on_system_event)
 
 local function update_score_display()
     if score_text then
@@ -191,4 +227,5 @@ end
 display.setDefault("background", 0.25, 0.25, 0.25)
 register_with_server()
 update_score_display()
+play_bgm()   -- เริ่มเพลงพื้นหลังตั้งแต่เปิดแอป
 timer.performWithDelay(100, poll_udp, 0)
